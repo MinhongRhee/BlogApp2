@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.cos.blogapp2.domain.board.Board;
 import com.cos.blogapp2.domain.board.BoardRepository;
 import com.cos.blogapp2.domain.user.User;
+import com.cos.blogapp2.handler.exception.MyAsyncNotFoundException;
+import com.cos.blogapp2.handler.exception.MyNotFoundException;
 import com.cos.blogapp2.web.dto.BoardSaveReqDto;
 import com.cos.blogapp2.web.dto.CMRespDto;
 
@@ -29,9 +31,13 @@ public class BoardController {
 	private final BoardRepository boardRepository;
 	private final HttpSession session;
 	
-	@DeleteMapping("/board/{id}")
+	@DeleteMapping("/board/{id}") // 삭제 요청은 비동기 요청(fetch)
 	public @ResponseBody CMRespDto deleteById(@PathVariable int id) {
-		boardRepository.deleteById(id);
+		try {			
+			boardRepository.deleteById(id);
+		} catch (Exception e) {
+			throw new MyAsyncNotFoundException(id+"의 글을 찾을 수 없어 삭제할 수 없습니다.");
+		}
 		
 		return new CMRespDto(1,"삭제 성공",null);
 	}
@@ -76,12 +82,12 @@ public class BoardController {
 	}
 	
 	@GetMapping("/board/{id}")
-	public String detail(@PathVariable int id, Model model) {	
-		
-		Board boardEntity =  boardRepository.findById(id).get(); // get() 옵셔널안에 있는 걸 그대로 꺼내오는것
-		
-		model.addAttribute("boardEntity", boardEntity);
-		
+	public String detail(@PathVariable int id, Model model) {		
+		// Board boardEntity =  boardRepository.findById(id).get(); // get() 옵셔널안에 있는 걸 그대로 꺼내오는것
+		// 존재하지 않는 글일 시 상세보기 오류 처리 -> 비동기 처리가 아니므로 MyNotFoundException 처리 & 람다식으로 작성
+		Board boardEntity =  boardRepository.findById(id)
+									.orElseThrow(()-> new MyNotFoundException(id+"는 존재하지 않는 글입니다."));
+		model.addAttribute("boardEntity", boardEntity);		
 		return "board/detail";
 	}
 	
