@@ -40,7 +40,7 @@
   			alert("게시글 수정 성공");
   			location.href = "/board/" +id;
   		} else {
-  			alert("게시글 수정 실패");
+  			alert(parseResponse.msg);
   		}
   		}
   		
